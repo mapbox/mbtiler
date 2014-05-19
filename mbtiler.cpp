@@ -4,7 +4,8 @@
  * Writes directories of suitably tiled PNGs or JPEGS to a SQLite file
  * using the SQLite C API.
  *
- * Inspired by and modeled after GDAL's MBTiles driver.
+ * Inspired by GDAL's MBTiles driver, this module has no dependencies
+ * not already provided by GDAL and OGR.
  *
  * Author: Sean Gillies <sean@mapbox.com>
  *
@@ -82,25 +83,25 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
             "(name, value) "
             "VALUES (?1, ?2)",
             -1, &meta_stmt, NULL );
-    rc = sqlite3_bind_text(meta_stmt, 1, "name", 4, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, name, strlen(name), SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 1, "name", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, name, -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "type", 4, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "overlay", 7, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 1, "type", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "overlay", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "version", 7, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "1.1", 3, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 1, "version", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "1.1", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "description", 11, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 1, "description", -1, SQLITE_STATIC);
     rc = sqlite3_bind_text(
-            meta_stmt, 2, description, strlen(description), SQLITE_STATIC);
+            meta_stmt, 2, description, -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "format", 6, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "png", 3, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 1, "format", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "png", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_finalize(meta_stmt);
 
@@ -148,7 +149,7 @@ MBTiler::~MBTiler()
 
 
 int main(int argc, char** argv) {
-    MBTiler tiler("test", "A testing dataset");
+    MBTiler tiler(argv[1], argv[2]);
     return 0;
 }
 

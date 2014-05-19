@@ -15,7 +15,12 @@ all: mbtiler
 mbtiler: mbtiler.cpp Makefile
 	$(CXX) -o mbtiler mbtiler.cpp $(DEBUG_FLAGS) $(GDAL_CXXFLAGS) $(CXXFLAGS) $(GDAL_LDFLAGS) $(LDFLAGS)
 
-#test:
+test:
+	rm -rf test.mbtiles
+	./mbtiler test "MBTiler test dataset"
+	echo "select * from metadata;" | sqlite3 test.mbtiles;
+
+
 
 clean:
 	rm -f mbtiler
