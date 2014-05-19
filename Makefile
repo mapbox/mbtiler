@@ -19,8 +19,7 @@ test:
 	rm -rf test.mbtiles
 	./mbtiler test "MBTiler test dataset"
 	echo "select * from metadata;" | sqlite3 test.mbtiles;
-
-
+	echo "select * from tiles;" | sqlite3 test.mbtiles
 
 clean:
 	rm -f mbtiler
