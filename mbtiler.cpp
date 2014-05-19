@@ -68,12 +68,13 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     rc = sqlite3_open(filename.c_str(), &db);
     rc = sqlite3_exec(
             db, 
-            "CREATE TABLE metadata (name text, value text)", 
+            "CREATE TABLE metadata (name text, value text);", 
             NULL, NULL, NULL);
     rc = sqlite3_exec(
             db, 
             "CREATE TABLE tiles "
-            "(zoom_level, tile_column, tile_row, tile_data)",
+            "(zoom_level integer, tile_column integer, "
+            "tile_row integer, tile_data blob);",
             NULL, NULL, NULL);
 
     // Write MBTiles metadata.
@@ -81,7 +82,7 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
             db,
             "INSERT INTO metadata "
             "(name, value) "
-            "VALUES (?1, ?2)",
+            "VALUES (?1, ?2);",
             -1, &meta_stmt, NULL );
     rc = sqlite3_bind_text(meta_stmt, 1, "name", -1, SQLITE_STATIC);
     rc = sqlite3_bind_text(meta_stmt, 2, name, -1, SQLITE_STATIC);
@@ -92,7 +93,7 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
     rc = sqlite3_bind_text(meta_stmt, 1, "version", -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "1.1", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "1.0.0", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
     rc = sqlite3_bind_text(meta_stmt, 1, "description", -1, SQLITE_STATIC);
@@ -103,6 +104,17 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     rc = sqlite3_bind_text(meta_stmt, 1, "format", -1, SQLITE_STATIC);
     rc = sqlite3_bind_text(meta_stmt, 2, "png", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
+
+    rc = sqlite3_reset(meta_stmt);
+    rc = sqlite3_bind_text(meta_stmt, 1, "minzoom", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "15", -1, SQLITE_STATIC);
+    rc = sqlite3_step(meta_stmt);
+
+    rc = sqlite3_reset(meta_stmt);
+    rc = sqlite3_bind_text(meta_stmt, 1, "maxzoom", -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, "15", -1, SQLITE_STATIC);
+    rc = sqlite3_step(meta_stmt);
+
     rc = sqlite3_finalize(meta_stmt);
 
     // Prepare the tile insert statement.
@@ -110,7 +122,7 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
             db,
             "INSERT INTO tiles "
             "(zoom_level, tile_column, tile_row, tile_data) "
-            "VALUES (?, ?, ?, ?)",
+            "VALUES (?1, ?2, ?3, ?4);",
             -1, &tile_stmt, NULL );
 }
 
@@ -126,30 +138,76 @@ MBTiler::~MBTiler()
     CPLFree(description);
 }
 
-
-/*int MBTiler::InsertImage(
+int MBTiler::InsertImage(
         const char *pszFilename,
         int zoom,
         int tile_column,
         int tile_row)
 {
     int rc;
+    FILE *png;
+    unsigned char *buffer;
+    size_t file_size;
+    size_t n=65536;
+    size_t result;
+
+    // Get the file contents.
+    png = fopen(pszFilename, "rb");
+    if (png == NULL) {
+        std::clog << "Failed to open file";
+        return -1;
+    }
+
+    // obtain file size:
+    fseek(png, 0, SEEK_END);
+    file_size = ftell(png);
+    rewind(png);
+
+    buffer = (unsigned char *) malloc(sizeof(unsigned char)*file_size);
+    result = fread(buffer, 1, file_size, png);
+    if (result != file_size) {
+        std::clog << "Unexpected number of bytes read: " << result << "\n";
+        return -1;
+    }
+    fclose(png);
+
+    rc = sqlite3_reset(tile_stmt);
 
     // Bind values.
-    rc = sqlite3_bind_int(tile_stmt, 1, &zoom);
-    rc = sqlite3_bind_int(tile_stmt, 2, &tile_column);
-    rc = sqlite3_bind_int(tile_stmt, 3, &tile_row);
-    rc = sqlite3_bind_blob(tile_stmt, 4, buffer, n, SQLITE_STATIC);
+    rc = sqlite3_bind_int(tile_stmt, 1, zoom);
+    rc = sqlite3_bind_int(tile_stmt, 2, tile_column);
+    rc = sqlite3_bind_int(tile_stmt, 3, tile_row);
+    rc = sqlite3_bind_blob(tile_stmt, 4, buffer, file_size, SQLITE_STATIC);
 
     // Execute and finalize.
     rc = sqlite3_step(tile_stmt);
     
     return TRUE;
-}*/
+}
 
 
 int main(int argc, char** argv) {
-    MBTiler tiler(argv[1], argv[2]);
+    
+    int retval;
+
+    try {
+        MBTiler tiler(argv[1], argv[2]);
+
+        // Write one tile.
+        if (TRUE != tiler.InsertImage(
+                        "tests/data/15/16979/21196.png", 
+                        15, 16979, 11571))
+        {
+            throw std::runtime_error(
+                "NULL result from GDALOpen() of first input image");
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        std::clog << "Fail! tile not written: '" << ex.what() << "'\n";
+        return 1;
+    }
     return 0;
 }
+
 
