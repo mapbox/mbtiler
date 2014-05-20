@@ -2,7 +2,7 @@ OS:=$(shell uname -s)
 
 LDFLAGS:=$(LDFLAGS) -L/usr/local/opt/sqlite/lib -lsqlite3
 GDAL_CXXFLAGS=$(shell gdal-config --cflags)
-GDAL_LDFLAGS=$(shell gdal-config --libs --dep-libs)
+GDAL_LDFLAGS=$(shell gdal-config --libs) $(shell gdal-config --dep-libs)
 CXXFLAGS:=$(CXXFLAGS) -I/usr/local/opt/sqlite/include
 COMMON_FLAGS=-Wall -Wsign-compare -Wshadow -Wsign-conversion -Wconversion -Wunused-parameter -Wconversion
 RELEASE_FLAGS=$(COMMON_FLAGS) -DNDEBUG -O3 -finline-functions
