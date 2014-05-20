@@ -11,30 +11,13 @@
  *
  ****************************************************************************/
 
-#include "gdal_priv.h"
 #include "cpl_conv.h"
 #include "cpl_string.h"
-#include "stdlib.h"
-#include "unistd.h"
-
-#include <algorithm>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-
-#include "gdal_frmts.h"
-#include "gdal_pam.h"
-#include "ogr_api.h"
 #include "sqlite3.h"
-#include "cpl_vsil_curl_priv.h"
+#include "stdlib.h"
 
-#include "zlib.h"
-
-#include <math.h>
-
-CPL_CVSID("$Id$");
-
-static const char * const apszAllowedDrivers[] = {"JPEG", "PNG", NULL};
+#include <iostream>
+#include <stdexcept>
 
 class MBTiler
 {
@@ -47,7 +30,7 @@ class MBTiler
     public:
         MBTiler(const char *pszName, const char *pszDescription);
         ~MBTiler();
-        int InsertImage(
+        void InsertImage(
             const char *pszFilename,
             int zoom,
             int tile_column,
@@ -105,16 +88,6 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     rc = sqlite3_bind_text(meta_stmt, 2, "png", -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
 
-    rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "minzoom", -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "15", -1, SQLITE_STATIC);
-    rc = sqlite3_step(meta_stmt);
-
-    rc = sqlite3_reset(meta_stmt);
-    rc = sqlite3_bind_text(meta_stmt, 1, "maxzoom", -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, "15", -1, SQLITE_STATIC);
-    rc = sqlite3_step(meta_stmt);
-
     rc = sqlite3_finalize(meta_stmt);
 
     // Prepare the tile insert statement.
@@ -138,24 +111,23 @@ MBTiler::~MBTiler()
     CPLFree(description);
 }
 
-int MBTiler::InsertImage(
+void MBTiler::InsertImage(
         const char *pszFilename,
         int zoom,
         int tile_column,
         int tile_row)
 {
     int rc;
-    FILE *png;
-    unsigned char *buffer;
+    FILE *png = NULL;
+    unsigned char *buffer = NULL;
     size_t file_size;
-    size_t n=65536;
     size_t result;
 
     // Get the file contents.
     png = fopen(pszFilename, "rb");
     if (png == NULL) {
-        std::clog << "Failed to open file";
-        return -1;
+        throw std::runtime_error(
+                "NULL result from GDALOpen() of first input image");
     }
 
     // obtain file size:
@@ -164,43 +136,38 @@ int MBTiler::InsertImage(
     rewind(png);
 
     buffer = (unsigned char *) malloc(sizeof(unsigned char)*file_size);
+    if (buffer == NULL) {
+        throw std::runtime_error(
+                "NULL buffer");
+    }
     result = fread(buffer, 1, file_size, png);
     if (result != file_size) {
-        std::clog << "Unexpected number of bytes read: " << result << "\n";
-        return -1;
+        free(buffer);
+        throw std::runtime_error(
+                "NULL result from GDALOpen() of first input image");
     }
     fclose(png);
 
     rc = sqlite3_reset(tile_stmt);
-
-    // Bind values.
     rc = sqlite3_bind_int(tile_stmt, 1, zoom);
     rc = sqlite3_bind_int(tile_stmt, 2, tile_column);
     rc = sqlite3_bind_int(tile_stmt, 3, tile_row);
     rc = sqlite3_bind_blob(tile_stmt, 4, buffer, file_size, SQLITE_STATIC);
-
-    // Execute and finalize.
     rc = sqlite3_step(tile_stmt);
     
-    return TRUE;
+    free(buffer);
 }
 
 
 int main(int argc, char** argv) {
     
-    int retval;
-
     try {
         MBTiler tiler(argv[1], argv[2]);
-
+        
         // Write one tile.
-        if (TRUE != tiler.InsertImage(
-                        "tests/data/15/16979/21196.png", 
-                        15, 16979, 11571))
-        {
-            throw std::runtime_error(
-                "NULL result from GDALOpen() of first input image");
-        }
+        tiler.InsertImage(
+            "tests/data/15/16979/21196.png", 
+            15, 16979, 21196);
     }
     catch (std::exception const& ex)
     {
@@ -209,5 +176,3 @@ int main(int argc, char** argv) {
     }
     return 0;
 }
-
-

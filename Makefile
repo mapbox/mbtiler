@@ -1,8 +1,6 @@
 OS:=$(shell uname -s)
 
 LDFLAGS:=$(LDFLAGS) -L/usr/local/opt/sqlite/lib -lsqlite3
-
-
 GDAL_CXXFLAGS=$(shell gdal-config --cflags)
 GDAL_LDFLAGS=$(shell gdal-config --libs --dep-libs)
 CXXFLAGS:=$(CXXFLAGS) -I/usr/local/opt/sqlite/include
