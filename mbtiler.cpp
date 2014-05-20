@@ -118,35 +118,35 @@ void MBTiler::InsertImage(
         int tile_row)
 {
     int rc;
-    FILE *png = NULL;
+    FILE *fp = NULL;
     unsigned char *buffer = NULL;
     size_t file_size;
     size_t result;
 
     // Get the file contents.
-    png = fopen(pszFilename, "rb");
-    if (png == NULL) {
+    fp = fopen(pszFilename, "rb");
+    if (fp == NULL) {
         throw std::runtime_error(
                 "NULL result from GDALOpen() of first input image");
     }
 
     // obtain file size:
-    fseek(png, 0, SEEK_END);
-    file_size = ftell(png);
-    rewind(png);
+    fseek(fp, 0, SEEK_END);
+    file_size = static_cast<size_t>(ftell(fp));
+    rewind(fp);
 
     buffer = (unsigned char *) malloc(sizeof(unsigned char)*file_size);
     if (buffer == NULL) {
         throw std::runtime_error(
                 "NULL buffer");
     }
-    result = fread(buffer, 1, file_size, png);
+    result = fread(buffer, 1, file_size, fp);
     if (result != file_size) {
         free(buffer);
         throw std::runtime_error(
                 "NULL result from GDALOpen() of first input image");
     }
-    fclose(png);
+    fclose(fp);
 
     rc = sqlite3_reset(tile_stmt);
     rc = sqlite3_bind_int(tile_stmt, 1, zoom);
@@ -161,6 +161,10 @@ void MBTiler::InsertImage(
 
 int main(int argc, char** argv) {
     
+    if (argc < 3) {
+        std::clog << "Usage: expects two arguments: <filename> <description>\n";
+        return 1;
+    }
     try {
         MBTiler tiler(argv[1], argv[2]);
         
