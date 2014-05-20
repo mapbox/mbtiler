@@ -1,6 +1,6 @@
 CXX := $(CXX)
 CXXFLAGS := $(CXXFLAGS)
-LDFLAGS := $(LDFLAGS)
+LDFLAGS := $(LDFLAGS) -L/usr/local/opt/sqlite/lib -lsqlite3
 GDAL_CXXFLAGS = $(shell gdal-config --cflags)
 GDAL_LDFLAGS = $(shell gdal-config --libs) $(shell gdal-config --dep-libs)
 COMMON_FLAGS = -Wall -Wsign-compare -Wshadow -Wsign-conversion -Wconversion -Wunused-parameter -Wconversion
