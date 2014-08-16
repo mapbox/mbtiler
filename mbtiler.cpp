@@ -14,7 +14,8 @@
 #include "cpl_conv.h"
 #include "cpl_string.h"
 #include "sqlite3.h"
-#include "stdlib.h"
+
+#include <stdlib.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -26,7 +27,7 @@ class MBTiler
     sqlite3 *db;
     sqlite3_stmt *meta_stmt;
     sqlite3_stmt *tile_stmt;
-    
+
     public:
         MBTiler(const char *pszName, const char *pszDescription);
         ~MBTiler();
@@ -40,7 +41,7 @@ class MBTiler
 MBTiler::MBTiler(const char *pszName, const char *pszDescription)
 {
     int rc;
-    
+
     name = CPLStrdup(pszName);
     description = CPLStrdup(pszDescription);
 
@@ -52,11 +53,11 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     // TODO: check return values of sqlite3 functions.
     rc = sqlite3_open(filename.c_str(), &db);
     rc = sqlite3_exec(
-            db, 
-            "CREATE TABLE metadata (name text, value text);", 
+            db,
+            "CREATE TABLE metadata (name text, value text);",
             NULL, NULL, NULL);
     rc = sqlite3_exec(
-            db, 
+            db,
             "CREATE TABLE tiles "
             "(zoom_level integer, tile_column integer, "
             "tile_row integer, tile_data blob);",
@@ -157,23 +158,23 @@ void MBTiler::InsertImage(
     rc = sqlite3_bind_blob(
             tile_stmt, 4, buffer, static_cast<int>(file_size), SQLITE_STATIC);
     rc = sqlite3_step(tile_stmt);
-    
+
     free(buffer);
 }
 
 
 int main(int argc, char** argv) {
-    
+
     if (argc < 3) {
         std::clog << "Usage: expects two arguments: <filename> <description>\n";
         return 1;
     }
     try {
         MBTiler tiler(argv[1], argv[2]);
-        
+
         // Write one tile.
         tiler.InsertImage(
-            "tests/data/15/16979/21196.png", 
+            "tests/data/15/16979/21196.png",
             15, 16979, 21196);
     }
     catch (std::exception const& ex)
