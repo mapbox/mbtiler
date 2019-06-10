@@ -3,9 +3,9 @@ mbtiler
 
 A demo of MBTile writing in C/C++
 
-This module and program have been developed on OS X. GDAL's CPL module and the
-SQLite library are cross-platform and porting this code to Windows should not
-be difficult, but no compilation or testing on Windows has been done.
+This module and program have been developed on OS X. The
+SQLite library is cross-platform and porting this code to Windows or Linux should not
+be difficult, but no compilation or testing on Windows or Linux has been done.
 
 The mbtiler demo program takes 2 arguments: MBTiles dataset name and
 description. It reads one image tile from the tests/data directory and

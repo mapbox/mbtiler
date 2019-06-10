@@ -1,8 +1,6 @@
 CXX := $(CXX)
 CXXFLAGS := $(CXXFLAGS)
-LDFLAGS := $(LDFLAGS) -L/usr/local/opt/sqlite/lib -lsqlite3
-GDAL_CXXFLAGS = $(shell gdal-config --cflags)
-GDAL_LDFLAGS = $(shell gdal-config --libs) $(shell gdal-config --dep-libs)
+LDFLAGS := $(LDFLAGS) -lsqlite3
 COMMON_FLAGS = -Wall -Wsign-compare -Wshadow -Wsign-conversion -Wconversion -Wunused-parameter -Wconversion
 RELEASE_FLAGS = $(COMMON_FLAGS) -DNDEBUG -O3 -finline-functions
 DEBUG_FLAGS = $(COMMON_FLAGS) -g -DDEBUG -O0
@@ -10,7 +8,7 @@ DEBUG_FLAGS = $(COMMON_FLAGS) -g -DDEBUG -O0
 all: mbtiler
 
 mbtiler: mbtiler.cpp Makefile
-	$(CXX) -o mbtiler mbtiler.cpp $(DEBUG_FLAGS) $(GDAL_CXXFLAGS) $(CXXFLAGS) $(GDAL_LDFLAGS) $(LDFLAGS)
+	$(CXX) -o mbtiler mbtiler.cpp $(DEBUG_FLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 test:
 	rm -rf test.mbtiles

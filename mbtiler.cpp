@@ -11,43 +11,37 @@
  *
  ****************************************************************************/
 
-#include "cpl_conv.h"
-#include "cpl_string.h"
-#include "sqlite3.h"
-
-#include <stdlib.h>
-
+extern "C" {
+  #include "sqlite3.h"
+}
+#include <string>
 #include <iostream>
 #include <stdexcept>
 
 class MBTiler
 {
-    char *name;
-    char *description;
+    std::string name;
+    std::string description;
     sqlite3 *db;
     sqlite3_stmt *meta_stmt;
     sqlite3_stmt *tile_stmt;
 
     public:
-        MBTiler(const char *pszName, const char *pszDescription);
+        MBTiler(const std::string & name, const std::string & description);
         ~MBTiler();
         void InsertImage(
-            const char *pszFilename,
+            const std::string & filename,
             int zoom,
             int tile_column,
             int tile_row);
 };
 
-MBTiler::MBTiler(const char *pszName, const char *pszDescription)
+MBTiler::MBTiler(const std::string & name, const std::string & description)
 {
     int rc;
 
-    name = CPLStrdup(pszName);
-    description = CPLStrdup(pszDescription);
-
-    std::string basename(pszName);
     std::string extension(".mbtiles");
-    std::string filename = basename + extension;
+    std::string filename = name + extension;
 
     // Initialize database and create tables.
     // TODO: check return values of sqlite3 functions.
@@ -71,7 +65,7 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
             "VALUES (?1, ?2);",
             -1, &meta_stmt, NULL );
     rc = sqlite3_bind_text(meta_stmt, 1, "name", -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text(meta_stmt, 2, name, -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(meta_stmt, 2, name.c_str(), -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
     rc = sqlite3_bind_text(meta_stmt, 1, "type", -1, SQLITE_STATIC);
@@ -84,7 +78,7 @@ MBTiler::MBTiler(const char *pszName, const char *pszDescription)
     rc = sqlite3_reset(meta_stmt);
     rc = sqlite3_bind_text(meta_stmt, 1, "description", -1, SQLITE_STATIC);
     rc = sqlite3_bind_text(
-            meta_stmt, 2, description, -1, SQLITE_STATIC);
+            meta_stmt, 2, description.c_str(), -1, SQLITE_STATIC);
     rc = sqlite3_step(meta_stmt);
     rc = sqlite3_reset(meta_stmt);
     rc = sqlite3_bind_text(meta_stmt, 1, "format", -1, SQLITE_STATIC);
@@ -110,12 +104,10 @@ MBTiler::~MBTiler()
     if (db != NULL) {
         sqlite3_close(db);
     }
-    CPLFree(name);
-    CPLFree(description);
 }
 
 void MBTiler::InsertImage(
-        const char *pszFilename,
+        const std::string & filename,
         int zoom,
         int tile_column,
         int tile_row)
@@ -127,10 +119,10 @@ void MBTiler::InsertImage(
     size_t result;
 
     // Get the file contents.
-    fp = fopen(pszFilename, "rb");
+    fp = fopen(filename.c_str(), "rb");
     if (fp == NULL) {
         throw std::runtime_error(
-                "NULL result from GDALOpen() of first input image");
+                "Could not open file");
     }
 
     // Determine the file and blob size.
@@ -147,7 +139,7 @@ void MBTiler::InsertImage(
     if (result != file_size) {
         free(buffer);
         throw std::runtime_error(
-                "NULL result from GDALOpen() of first input image");
+                "Could not open file");
     }
     fclose(fp);
 
